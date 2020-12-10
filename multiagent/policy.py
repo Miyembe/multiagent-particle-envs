@@ -1,4 +1,4 @@
-  import numpy as np
+import numpy as np
 from pyglet.window import key
 
 # individual agent policy
