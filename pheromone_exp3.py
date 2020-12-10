@@ -11,11 +11,19 @@ from npsocket_sn import SocketNumpyArray
 
 class Node():
 
-    def __init__(self, phero):
-        self.num_robots = 2
-        self.pheromone = [None] * self.num_robots
-        for i in range(len(phero)):
-            self.pheromone[i] = phero[i]
+    def __init__(self):
+
+        # Receiving 
+        self.num_robots = 0
+        self.num_robots = self.sock_receiver.receive_number()
+        print("num_robots: {}".format(self.num_robots))
+
+        # Pheromone initialization
+        self.pheromone = [None]*self.num_robots
+        for i in range(self.num_robots):
+            self.pheromone[i] = Pheromone('dynamic {}'.format(i), 0.5, 0)
+        self.pheromone.append(Pheromone('static', 180, 0))
+
         self.phero_max = 1.0
         self.phero_min = 0.0
         self.is_phero_inj = True
@@ -52,19 +60,18 @@ class Node():
         # self.pheromone.circle(x_n3, y_0, 1, 1)
         # self.pheromone.circle(x_0, y_3, 1, 1)
         # self.pheromone.circle(x_0,y_n3, 1, 1)
-        print("Initialisation completed")
 
-        
+        print("Initialisation completed")
 
     def posToIndex(self, x, y):
         phero = self.pheromone
         x_tmp = x
         y_tmp = y
         # Read pheromone value at the robot position
-        x_index = [0]*len(phero)
-        y_index = [0]*len(phero)
-        for i in range(len(phero)):
-            res = phero[i].resolution
+        x_index = [0]*self.num_robots
+        y_index = [0]*self.num_robots
+        for i in range(self.num_robots):
+            res = phero[0].resolution # 20201209 Every pheromone must share same grid size
             round_dp = int(log10(res))
             x_tmp[i] = round(x_tmp[i], round_dp) # round the position value so that they fit into the centre of the cell.
             y_tmp[i] = round(y_tmp[i], round_dp) # e.g. 0.13 -> 0.1
@@ -92,8 +99,11 @@ class Node():
         # ori = pose.orientation
         #print("pos0x: {}".format(pos[0].x))
         phero = self.pheromone
-        x = [pos[0][0], pos[1][0]]
-        y = [pos[0][1], pos[1][1]]
+        x = []
+        y = []
+        for i in range(self.num_robots):
+            x.append(pos[i][0])
+            y.append(pos[i][1])
         print("x, y: {}, {}".format(x, y))
         x_idx, y_idx = self.posToIndex(x, y)
         
@@ -136,15 +146,34 @@ class Node():
         # self.pub_phero.publish(phero_val)
         
         ''' Read Pheromone from each pheromone grid '''
-        # 9 pheromone value for two robots read from the other's pheromone grid. 
-
+        # each robot reads (1) static pheromone value and (2) the sum of dynamic pheromone of other robots
         phero_val = [None] * self.num_robots
         #phero_arr = np.array( )
+
+        # Dynamic pheromone
         for n in range(self.num_robots):
             phero_val[n] = list()     
             for i in range(3):
                 for j in range(3):
-                    phero_val[n].append(self.pheromone[1-n].getPhero(x_idx[n]+i-1, y_idx[n]+j-1)) # Read the other's pheromone
+                    phero_sum = sum([phero_dy.getPhero(x_idx[n]+i-1, y_idx[n]+j-1) for phero_dy in self.pheromone if ('dynamic' in phero_dy.name) and (phero_dy.name[-1] is not n)])
+                    phero_val[n].append(phero_sum)) # Read the sum of other robots pheromone
+                    # Check if it works well 
+                    print("Phero_val[n]: {} - dynamic".format(phero_val[n].append)
+                    
+
+        # Static pheromone
+        for n in range(self.num_robots):
+            for i in range(3):
+                for j in range(3):
+                    static_phero = phero_st for phero_st in self.pheromone if 'static' in phero_st.name
+                    phero_val[n] += static_phero.getPhero(x_index+i-1, y_index+j-1)
+                    print("Phero_val[n]: {} - static".format(phero_val[n])
+                    phero_val[n] = min(self.phero_max, max(self.phero_min, phero_val[n]))
+                    print("Phero_val[n]: {} - clipped".format(phero_val[n]))
+
+        # Clipping pheromone value
+
+        # Return pheromone value to each robot
         self.sock_receiver.return_to_client(np.asarray(phero_val))
 
         # ========================================================================= #
@@ -154,19 +183,21 @@ class Node():
         # Pheromone injection (uncomment it when injection is needed)
         ## Two robots inject pheromone in different grids
         if self.is_phero_inj is True:
-            for i in range(len(self.pheromone)):
-                #phero[i].injection(x_idx[i], y_idx[i], 1, 25, self.phero_max)
-                phero[i].gradInjection(x_idx[i], y_idx[i], 1, 0.3, 1.2, self.phero_max)
+            for i, phero_dy in enumerate(self.pheromone):
+                if '%d'%i in phero_dy.name:
+                    phero_dy.gradInjection(x_idx[i], y_idx[i], 1, 0.3, 1.2, self.phero_max)
 
         # ========================================================================= #
 	    #                           Pheromone Update                                #
 	    # ========================================================================= #
 
-        # Update pheromone matrix in every 0.1s
+        # Update pheromone matrix in every 0.1s - only dynamic pheromone
         time_cur = time.clock()
         if time_cur-phero[0].step_timer >= 0.1: 
-            phero[0].update(self.phero_min, self.phero_max)
-            phero[0].step_timer = time_cur
+            for phero_dy in self.pheromone:
+                if "dynamic" in phero_dy.name:
+                    phero_dy.update(self.phero_min, self.phero_max)
+                    phero_dy.step_timer = time_cur
 
         #log_time_cur = time.clock()
         # Logging Pheromone grid
@@ -213,7 +244,8 @@ class Node():
             try:
                 for i in range(self.num_robots):  # Reset the pheromone grid
                     self.pheromone[i].reset()
-                #self.pheromone.load("simple_collision_diffused") # you can load any types of pheromone grid
+                    if 'static' in self.pheromone[i].name
+                        self.pheromone.load("simple_collision_diffused3") # you can load any types of pheromone grid
                 print("Pheromone grid reset!")
                 self.is_reset = False           # Reset the flag for next use
             except IOError as io:
@@ -274,6 +306,7 @@ class Pheromone():
                     if self.grid[x-(size-1)/2+i, y-(size-1)/2+j] >= maxp:
                         self.grid[x-(size-1)/2+i, y-(size-1)/2+j] = maxp
             self.injection_timer = time_cur
+
     def gradInjection(self, x, y, value, min_val, rad, maxp):
 
         time_cur = time.clock()
@@ -331,25 +364,25 @@ class Pheromone():
         self.grid = np.zeros((self.num_cell, self.num_cell))
 
     def save(self, file_name):
-        # dir_name = os.path.dirname('/home/swn/catkin_ws/src/turtlebot3_waypoint_navigation/tmp/{}.npy'.format(file_name))
-        # if not os.path.exists(dir_name):
-        #     os.makedirs(dir_name)
+        '''
+        Save the current matrix as a numpy object
+        '''
         with open('/home/swn/catkin_ws/src/turtlebot3_waypoint_navigation/tmp/{}.npy'.format(file_name), 'wb') as f:
             np.save(f, self.grid)
         print("The pheromone matrix {} is successfully saved".format(file_name))
 
     def load(self, file_name):
+        '''
+        Load the previously saved pheromone matrix 
+        '''
         with open('/home/swn/catkin_ws/src/turtlebot3_waypoint_navigation/tmp/{}.npy'.format(file_name), 'rb') as f:
             self.grid = np.load(f)
-        #os.remove('/home/swn/catkin_ws/src/turtlebot3_waypoint_navigation/tmp/{}.npy'.format(file_name))
         print("The pheromone matrix {} is successfully loaded".format(file_name))
 
     
 if __name__ == "__main__":
-    Phero1 = Pheromone('1', 0.5, 0)
-    Phero2 = Pheromone('2', 0.5, 0)
-    Phero = [Phero1, Phero2]
-    node1 = Node(Phero)
+    
+    node1 = Node()
     while True:
         node1.pheroCallback()
         

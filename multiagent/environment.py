@@ -3,7 +3,10 @@ from gym import spaces
 from gym.envs.registration import EnvSpec
 import numpy as np
 from multiagent.multi_discrete import MultiDiscrete
+<<<<<<< HEAD
 import time
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
 
 # environment for all agents in the multiagent world
 # currently code assumes that no agents will be created/destroyed at runtime!
@@ -27,7 +30,11 @@ class MultiAgentEnv(gym.Env):
         self.info_callback = info_callback
         self.done_callback = done_callback
         # environment parameters
+<<<<<<< HEAD
         self.discrete_action_space = False
+=======
+        self.discrete_action_space = True
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
         # if true, action is a number 0...N, otherwise action is a one-hot N-dimensional vector
         self.discrete_action_input = False
         # if true, even the action is continuous, action will be performed discretely
@@ -78,6 +85,7 @@ class MultiAgentEnv(gym.Env):
             self.viewers = [None] * self.n
         self._reset_render()
 
+<<<<<<< HEAD
     def action_rescale(self, action_n):
         
         if len(action_n) == 2:
@@ -98,12 +106,15 @@ class MultiAgentEnv(gym.Env):
 
 
 
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
     def step(self, action_n):
         obs_n = []
         reward_n = []
         done_n = []
         info_n = {'n': []}
         self.agents = self.world.policy_agents
+<<<<<<< HEAD
         # Rescale the actions
         action_n = self.action_rescale(action_n)
         # set action for each agent
@@ -112,23 +123,35 @@ class MultiAgentEnv(gym.Env):
         else:
             for i, agent in enumerate(self.agents):
                 self._set_action(action_n[i], agent, self.action_space[i])
+=======
+        # set action for each agent
+        for i, agent in enumerate(self.agents):
+            self._set_action(action_n[i], agent, self.action_space[i])
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
         # advance world state
         self.world.step()
         # record observation for each agent
         for agent in self.agents:
+<<<<<<< HEAD
             
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
             obs_n.append(self._get_obs(agent))
             reward_n.append(self._get_reward(agent))
             done_n.append(self._get_done(agent))
 
             info_n['n'].append(self._get_info(agent))
+<<<<<<< HEAD
             if agent.state.done == True:
                 self.reset()
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
 
         # all agents get total reward in cooperative case
         reward = np.sum(reward_n)
         if self.shared_reward:
             reward_n = [reward] * self.n
+<<<<<<< HEAD
         obs = np.asarray(obs_n).reshape(len(self.agents), self.world.obs_n)
         
         infos = [{"episode": {"l": self.time, "r": reward_n}}]
@@ -136,6 +159,10 @@ class MultiAgentEnv(gym.Env):
         #time.sleep(0.1)
 
         return range(self.n), obs, reward_n, done_n, infos #20201130 range added
+=======
+
+        return obs_n, reward_n, done_n, info_n
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
 
     def reset(self):
         # reset world
@@ -147,9 +174,13 @@ class MultiAgentEnv(gym.Env):
         self.agents = self.world.policy_agents
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
+<<<<<<< HEAD
         init_obs = np.asarray(obs_n).reshape(len(self.agents), self.world.obs_n)
         time.sleep(0.5)
         return range(self.n), init_obs #20201130 range added
+=======
+        return obs_n
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
 
     # get info used for benchmarking
     def _get_info(self, agent):
@@ -180,8 +211,11 @@ class MultiAgentEnv(gym.Env):
     def _set_action(self, action, agent, action_space, time=None):
         agent.action.u = np.zeros(self.world.dim_p)
         agent.action.c = np.zeros(self.world.dim_c)
+<<<<<<< HEAD
         # Robot F [linear.x, angular.z]
         agent.action.twist = np.zeros(self.world.dim_p)
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
         # process action
         if isinstance(action_space, MultiDiscrete):
             act = []
@@ -212,6 +246,7 @@ class MultiAgentEnv(gym.Env):
                     agent.action.u[0] += action[0][1] - action[0][2]
                     agent.action.u[1] += action[0][3] - action[0][4]
                 else:
+<<<<<<< HEAD
                     #agent.action.u = action[0]
                     if np.shape(action) == (2, ) :
                         agent.action.twist = action
@@ -222,6 +257,9 @@ class MultiAgentEnv(gym.Env):
                         print("size: {}".format(agent.action.twist.shape))
                         agent.action.twist = action[0]
                         agent.twistToU() 
+=======
+                    agent.action.u = action[0]
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
             sensitivity = 5.0
             if agent.accel is not None:
                 sensitivity = agent.accel
@@ -295,7 +333,11 @@ class MultiAgentEnv(gym.Env):
         for i in range(len(self.viewers)):
             from multiagent import rendering
             # update bounds to center around agent
+<<<<<<< HEAD
             cam_range = 5
+=======
+            cam_range = 1
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
             if self.shared_viewer:
                 pos = np.zeros(self.world.dim_p)
             else:
