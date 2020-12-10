@@ -3,6 +3,20 @@ import numpy as np
 import pickle
 import struct
 
+def boolify(s):
+    if s == 'True':
+        return True
+    elif s == 'False':
+        return False
+    raise ValueError("Boolify Value Error")
+
+def autoconvert(s):
+    for fn in (boolify, int, float):
+            try: 
+                return fn(s)
+            except ValueError:
+                pass
+    return s
 
 class SocketNumpyArray():
     def __init__(self):
@@ -10,6 +24,7 @@ class SocketNumpyArray():
         self.port = 0
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.type = None  # server or client
+        self.sep = ' '
 
     def initialize_sender(self, address, port):
         """
@@ -42,6 +57,17 @@ class SocketNumpyArray():
 
         # Then data
         self.socket.sendall(message_size + data)
+
+    def send_number(self, num):
+        """
+        :param number: number to send to the listening socket
+        :type number: int, float whatever numbers
+        :return: None
+        :rtype: None
+        """
+
+        val = str(num) + self.sep
+        self.socket.sendall(val.encode())
 
     def initalize_receiver(self, port):
         """
@@ -80,6 +106,14 @@ class SocketNumpyArray():
         frame = pickle.loads(frame_data)
         return frame
 
+    def receive_number(self):
+        buf = ''
+        while self.sep not in buf:
+            buf += self.conn.recv(8).decode()
+        num = autoconvert(buf)
+        
+        return num
+        
     def return_to_client(self, np_array):
         data = pickle.dumps(np_array)
         # Send message length first

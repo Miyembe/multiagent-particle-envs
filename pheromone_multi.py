@@ -282,7 +282,7 @@ class Pheromone():
             #print("Radius: {}".format(radius))
             for i in range(-radius, radius):
                 for j in range(-radius, radius):
-                    if sqrt(i**2+j**2) <= radius:
+                    if sqrt(i**2+j**2) <= radius and (x+i < self.num_cell-1 and x+i >= 0) and (y+i < self.num_cell-1 and y+i >= 0):
                         self.grid[x+i, y+j] = value - value*(sqrt(i**2+j**2))/radius + min_val
                         if self.grid[x+i, y+j] >= maxp:
                             self.grid[x+i, y+j] = maxp

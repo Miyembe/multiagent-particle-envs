@@ -3,6 +3,7 @@ from gym import spaces
 from gym.envs.registration import EnvSpec
 import numpy as np
 from multiagent.multi_discrete import MultiDiscrete
+import time
 
 # environment for all agents in the multiagent world
 # currently code assumes that no agents will be created/destroyed at runtime!
@@ -26,7 +27,7 @@ class MultiAgentEnv(gym.Env):
         self.info_callback = info_callback
         self.done_callback = done_callback
         # environment parameters
-        self.discrete_action_space = True
+        self.discrete_action_space = False
         # if true, action is a number 0...N, otherwise action is a one-hot N-dimensional vector
         self.discrete_action_input = False
         # if true, even the action is continuous, action will be performed discretely
@@ -77,31 +78,64 @@ class MultiAgentEnv(gym.Env):
             self.viewers = [None] * self.n
         self._reset_render()
 
+    def action_rescale(self, action_n):
+        
+        if len(action_n) == 2:
+            action_n[0] = action_n[0]*0.26
+            action_n[0] = min(1, max(-1, action_n[0]))
+            action_n[0] = 0.5*(action_n[0]+1)
+            action_n[1] = min(1, max(-1, action_n[1]))
+
+        else:
+            action_n[0][0] = action_n[0][0]*0.26
+            action_n[0][0] = min(1, max(-1, action_n[0][0]))
+            action_n[0][0] = 0.5*(action_n[0][0]+1)
+            action_n[0][1] = min(1, max(-1, action_n[0][1]))
+
+        
+
+        return action_n 
+
+
+
     def step(self, action_n):
         obs_n = []
         reward_n = []
         done_n = []
         info_n = {'n': []}
         self.agents = self.world.policy_agents
+        # Rescale the actions
+        action_n = self.action_rescale(action_n)
         # set action for each agent
-        for i, agent in enumerate(self.agents):
-            self._set_action(action_n[i], agent, self.action_space[i])
+        if len(self.agents) == 1:
+            self._set_action(action_n, self.agents[0], self.action_space)
+        else:
+            for i, agent in enumerate(self.agents):
+                self._set_action(action_n[i], agent, self.action_space[i])
         # advance world state
         self.world.step()
         # record observation for each agent
         for agent in self.agents:
+            
             obs_n.append(self._get_obs(agent))
             reward_n.append(self._get_reward(agent))
             done_n.append(self._get_done(agent))
 
             info_n['n'].append(self._get_info(agent))
+            if agent.state.done == True:
+                self.reset()
 
         # all agents get total reward in cooperative case
         reward = np.sum(reward_n)
         if self.shared_reward:
             reward_n = [reward] * self.n
+        obs = np.asarray(obs_n).reshape(len(self.agents), self.world.obs_n)
+        
+        infos = [{"episode": {"l": self.time, "r": reward_n}}]
+        self.time = self.time + 1
+        #time.sleep(0.1)
 
-        return obs_n, reward_n, done_n, info_n
+        return range(self.n), obs, reward_n, done_n, infos #20201130 range added
 
     def reset(self):
         # reset world
@@ -113,7 +147,9 @@ class MultiAgentEnv(gym.Env):
         self.agents = self.world.policy_agents
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
-        return obs_n
+        init_obs = np.asarray(obs_n).reshape(len(self.agents), self.world.obs_n)
+        time.sleep(0.5)
+        return range(self.n), init_obs #20201130 range added
 
     # get info used for benchmarking
     def _get_info(self, agent):
@@ -144,7 +180,7 @@ class MultiAgentEnv(gym.Env):
     def _set_action(self, action, agent, action_space, time=None):
         agent.action.u = np.zeros(self.world.dim_p)
         agent.action.c = np.zeros(self.world.dim_c)
-        # Robot twist [linear.x, angular.z]
+        # Robot F [linear.x, angular.z]
         agent.action.twist = np.zeros(self.world.dim_p)
         # process action
         if isinstance(action_space, MultiDiscrete):
@@ -177,12 +213,18 @@ class MultiAgentEnv(gym.Env):
                     agent.action.u[1] += action[0][3] - action[0][4]
                 else:
                     #agent.action.u = action[0]
-                    agent.action.twist = action[0]
-                    agent.twistToU()
+                    if np.shape(action) == (2, ) :
+                        agent.action.twist = action
+                        
+                        agent.twistToU()
+                    else:
+                        print("agent.action.twist: {}".format(action))
+                        print("size: {}".format(agent.action.twist.shape))
+                        agent.action.twist = action[0]
+                        agent.twistToU() 
             sensitivity = 5.0
             if agent.accel is not None:
                 sensitivity = agent.accel
-            print("agent.action.u: {}, type: {}".format(agent.action.u, type(agent.action.u)))
             agent.action.u *= sensitivity
             action = action[1:]
         if not agent.silent:

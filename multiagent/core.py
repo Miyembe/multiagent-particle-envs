@@ -1,6 +1,9 @@
 import numpy as np
 from math import *
 
+# Miscellanous functions
+
+
 # physical/external base state of all entites
 class EntityState(object):
     def __init__(self):
@@ -17,6 +20,15 @@ class AgentState(EntityState):
         super(AgentState, self).__init__()
         # communication utterance
         self.c = None
+        self.target = None
+        # 20201201 distances
+        self.distance_to_goal_prev = 0.0
+        self.distance_to_goal = 0.0
+        # 20201201 angle_diff
+        self.global_angle = 0.0
+        self.angle_diff = 0.0
+        # 20201201 done
+        self.done = False
 
 # action of the agent
 class Action(object):
@@ -26,7 +38,7 @@ class Action(object):
         # communication action
         self.c = None
         # Twist (linear.x, angular.z) - wheeled mobile robot style
-        self.twist = None
+        self.twist = [0, 0]
 
 
 # properties and state of physical world entity
@@ -83,15 +95,20 @@ class Agent(Entity):
         self.action = Action()
         # script behavior to execute
         self.action_callback = None
+        
     def twistToU(self):
         '''
         Twist has to be converted to u as it is used as acceleration vector in the next state calculation.
         So linear.x and angular.y in the local frame has to be converted to x and y acceleration vectors.
         '''
         if self.action.twist is not None:
-            theta = self.state.p_pose[2]
+            if self.action.twist.shape == (1,2):
+                self.action.twist = self.action.twist.reshape(2,)
+            theta = pi*self.state.p_pose[2]
             self.action.u = np.asarray([self.action.twist[0]*cos(theta)+self.action.twist[1]*cos(theta+pi/2),
                                         self.action.twist[0]*sin(theta)+self.action.twist[1]*sin(theta+pi/2)])
+
+
 
 # multi-agent world
 class World(object):
@@ -112,6 +129,7 @@ class World(object):
         # contact response parameters
         self.contact_force = 1e+2
         self.contact_margin = 1e-3
+        self.obs_n = None
 
     # return all entities in the world
     @property
@@ -128,6 +146,18 @@ class World(object):
     def scripted_agents(self):
         return [agent for agent in self.agents if agent.action_callback is not None]
 
+    def angle0To360(self, angle):
+        if angle < 0:
+            angle = angle + 2*pi
+        return angle
+    
+    def anglepiTopi(self, angle):
+        if angle < -pi:
+            angle = angle + 2*pi
+        if angle > pi:
+            angle = angle - 2*pi
+        return angle
+
     # update state of the world
     def step(self):
         # set actions for scripted agents 
@@ -139,12 +169,23 @@ class World(object):
         p_force = self.apply_action_force(p_force)
         # apply environment forces
         p_force = self.apply_environment_force(p_force)
+        # 20201201 distance_prev 
+        for agent in self.agents:
+            agent.state.distance_to_goal_prev = sqrt((agent.state.p_pos[0]-agent.state.target[0])**2+(agent.state.p_pos[1]-agent.state.target[1])**2)
         # integrate physical state
         self.integrate_state(p_force)
+        # 20201201 distance & angle diff
+        for agent in self.agents:
+            agent.state.distance_to_goal = sqrt((agent.state.p_pos[0]-agent.state.target[0])**2+(agent.state.p_pos[1]-agent.state.target[1])**2)
+            agent.state.global_angle = self.angle0To360(atan2(agent.state.target[1] - agent.state.p_pos[1], agent.state.target[0] - agent.state.p_pos[0]))
+            agent.state.angle_diff = self.anglepiTopi((agent.state.global_angle - self.angle0To360(agent.state.p_pose[2])))
         # update agent state
         for agent in self.agents:
             self.update_agent_pose(agent)
             self.update_agent_state(agent)
+            # print("global angle: {}".format(agent.state.global_angle))
+            # print("Local Angle: {}".format(agent.state.p_pose[2]))
+            # print("angle diff: {}".format(agent.state.angle_diff))
 
     # gather agent action forces
     def apply_action_force(self, p_force):
@@ -187,7 +228,9 @@ class World(object):
         '''
         Pose is updated in this function as intergrate_state only cares x, y p,v,a. 
         '''
-        agent.state.p_pose = [agent.state.p_pos[0], agent.state.p_pos[1], agent.state.p_pose[2]+agent.action.twist[1] * self.dt]
+        # 20201201 Wrapper for angle conversion is added. 
+        agent.state.p_pose[2] = self.anglepiTopi(agent.state.p_pose[2]+agent.action.twist[1]*self.dt)
+        agent.state.p_pose = [agent.state.p_pos[0], agent.state.p_pos[1], agent.state.p_pose[2]]
 
 
     def update_agent_state(self, agent):
@@ -216,3 +259,6 @@ class World(object):
         force_a = +force if entity_a.movable else None
         force_b = -force if entity_b.movable else None
         return [force_a, force_b]
+
+    
+

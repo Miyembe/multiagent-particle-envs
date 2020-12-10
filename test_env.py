@@ -22,23 +22,25 @@ env.discrete_action_space = False
 print(env.action_space)
 print("force: {}".format(env.force_discrete_action))
 # Communication Initialisation
-sock_sender = SocketNumpyArray()
-sock_sender.initialize_sender('localhost', 9999)
+# sock_sender = SocketNumpyArray()
+# sock_sender.initialize_sender('localhost', 9999)
 
 for i in range(100000):
     env.render()
-    env.step(action)
+    print("Action Space: {}".format(env.action_space))
+    ids, obs, rewards, dones, infos = env.step(action)
+    print("ids: {}, obs: {}, rewards: {}, dones: {}, infos: {}".format(ids, obs, rewards, dones, infos))
     # Publish the positions of robots
-    positions = np.asarray([agent.state.p_pos for agent in env.agents])
-    print(positions)
-    print(np.shape(positions))
-    start_time = time.time()
-    sock_sender.send_numpy_array(positions)
-    data = sock_sender.receive_from_server()
-    end_time = time.time()
-    time_diff = end_time - start_time
-    print("Data received from receiver: {}, size: {}".format(data, data.shape))
-    print("Time delay: {}".format(time_diff))
+    # positions = np.asarray([agent.state.p_pos for agent in env.agents])
+    # print(positions)
+    # print(np.shape(positions))
+    # start_time = time.time()
+    # sock_sender.send_numpy_array(positions)
+    # data = sock_sender.receive_from_server() 
+    # end_time = time.time()
+    # time_diff = end_time - start_time
+    # print("Data received from receiver: {}, size: {}".format(data, data.shape))
+    # print("Time delay: {}".format(time_diff))
     time.sleep(0.1)
     print("Step: {}".format(i))
 
