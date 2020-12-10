@@ -1,5 +1,15 @@
 import numpy as np
+<<<<<<< HEAD
 from math import *
+=======
+<<<<<<< HEAD
+from math import *
+
+# Miscellanous functions
+
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
+>>>>>>> mobile_robot
 
 # physical/external base state of all entites
 class EntityState(object):
@@ -8,8 +18,16 @@ class EntityState(object):
         self.p_pos = None
         # physical velocity
         self.p_vel = None
+<<<<<<< HEAD
         # robot pose (x, y, theta)
         self.p_pose = None
+=======
+<<<<<<< HEAD
+        # robot pose (x, y, theta)
+        self.p_pose = None
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
+>>>>>>> mobile_robot
 
 # state of agents (including communication and internal/mental state)
 class AgentState(EntityState):
@@ -17,6 +35,18 @@ class AgentState(EntityState):
         super(AgentState, self).__init__()
         # communication utterance
         self.c = None
+<<<<<<< HEAD
+        self.target = None
+        # 20201201 distances
+        self.distance_to_goal_prev = 0.0
+        self.distance_to_goal = 0.0
+        # 20201201 angle_diff
+        self.global_angle = 0.0
+        self.angle_diff = 0.0
+        # 20201201 done
+        self.done = False
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
 
 # action of the agent
 class Action(object):
@@ -25,9 +55,18 @@ class Action(object):
         self.u = None
         # communication action
         self.c = None
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> mobile_robot
         # Twist (linear.x, angular.z) - wheeled mobile robot style
-        self.twist = None
+        self.twist = [0, 0]
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
+>>>>>>> mobile_robot
 
 # properties and state of physical world entity
 class Entity(object):
@@ -83,15 +122,29 @@ class Agent(Entity):
         self.action = Action()
         # script behavior to execute
         self.action_callback = None
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        
+>>>>>>> mobile_robot
     def twistToU(self):
         '''
         Twist has to be converted to u as it is used as acceleration vector in the next state calculation.
         So linear.x and angular.y in the local frame has to be converted to x and y acceleration vectors.
         '''
         if self.action.twist is not None:
-            theta = self.state.p_pose[2]
+            if self.action.twist.shape == (1,2):
+                self.action.twist = self.action.twist.reshape(2,)
+            theta = pi*self.state.p_pose[2]
             self.action.u = np.asarray([self.action.twist[0]*cos(theta)+self.action.twist[1]*cos(theta+pi/2),
                                         self.action.twist[0]*sin(theta)+self.action.twist[1]*sin(theta+pi/2)])
+<<<<<<< HEAD
+=======
+
+
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
+>>>>>>> mobile_robot
 
 # multi-agent world
 class World(object):
@@ -112,6 +165,10 @@ class World(object):
         # contact response parameters
         self.contact_force = 1e+2
         self.contact_margin = 1e-3
+<<<<<<< HEAD
+        self.obs_n = None
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
 
     # return all entities in the world
     @property
@@ -128,6 +185,21 @@ class World(object):
     def scripted_agents(self):
         return [agent for agent in self.agents if agent.action_callback is not None]
 
+<<<<<<< HEAD
+    def angle0To360(self, angle):
+        if angle < 0:
+            angle = angle + 2*pi
+        return angle
+    
+    def anglepiTopi(self, angle):
+        if angle < -pi:
+            angle = angle + 2*pi
+        if angle > pi:
+            angle = angle - 2*pi
+        return angle
+
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
     # update state of the world
     def step(self):
         # set actions for scripted agents 
@@ -139,12 +211,31 @@ class World(object):
         p_force = self.apply_action_force(p_force)
         # apply environment forces
         p_force = self.apply_environment_force(p_force)
+<<<<<<< HEAD
+        # 20201201 distance_prev 
+        for agent in self.agents:
+            agent.state.distance_to_goal_prev = sqrt((agent.state.p_pos[0]-agent.state.target[0])**2+(agent.state.p_pos[1]-agent.state.target[1])**2)
         # integrate physical state
         self.integrate_state(p_force)
+        # 20201201 distance & angle diff
+        for agent in self.agents:
+            agent.state.distance_to_goal = sqrt((agent.state.p_pos[0]-agent.state.target[0])**2+(agent.state.p_pos[1]-agent.state.target[1])**2)
+            agent.state.global_angle = self.angle0To360(atan2(agent.state.target[1] - agent.state.p_pos[1], agent.state.target[0] - agent.state.p_pos[0]))
+            agent.state.angle_diff = self.anglepiTopi((agent.state.global_angle - self.angle0To360(agent.state.p_pose[2])))
         # update agent state
         for agent in self.agents:
             self.update_agent_pose(agent)
             self.update_agent_state(agent)
+            # print("global angle: {}".format(agent.state.global_angle))
+            # print("Local Angle: {}".format(agent.state.p_pose[2]))
+            # print("angle diff: {}".format(agent.state.angle_diff))
+=======
+        # integrate physical state
+        self.integrate_state(p_force)
+        # update agent state
+        for agent in self.agents:
+            self.update_agent_state(agent)
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
 
     # gather agent action forces
     def apply_action_force(self, p_force):
@@ -183,12 +274,23 @@ class World(object):
                     entity.state.p_vel = entity.state.p_vel / np.sqrt(np.square(entity.state.p_vel[0]) +
                                                                   np.square(entity.state.p_vel[1])) * entity.max_speed
             entity.state.p_pos += entity.state.p_vel * self.dt
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> mobile_robot
     def update_agent_pose(self, agent):
         '''
         Pose is updated in this function as intergrate_state only cares x, y p,v,a. 
         '''
-        agent.state.p_pose = [agent.state.p_pos[0], agent.state.p_pos[1], agent.state.p_pose[2]+agent.action.twist[1] * self.dt]
+        # 20201201 Wrapper for angle conversion is added. 
+        agent.state.p_pose[2] = self.anglepiTopi(agent.state.p_pose[2]+agent.action.twist[1]*self.dt)
+        agent.state.p_pose = [agent.state.p_pos[0], agent.state.p_pos[1], agent.state.p_pose[2]]
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
+>>>>>>> mobile_robot
 
     def update_agent_state(self, agent):
         # set communication state (directly for now)
@@ -215,4 +317,11 @@ class World(object):
         force = self.contact_force * delta_pos / dist * penetration
         force_a = +force if entity_a.movable else None
         force_b = -force if entity_b.movable else None
+<<<<<<< HEAD
         return [force_a, force_b]
+
+    
+
+=======
+        return [force_a, force_b]
+>>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
