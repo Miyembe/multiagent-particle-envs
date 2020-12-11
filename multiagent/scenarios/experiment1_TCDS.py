@@ -174,6 +174,10 @@ class Scenario(BaseScenario):
         else:
             distance_reward = 0.0
 
+        # Scaling distance_reward 
+        distance_reward = distance_reward * (2/world.dt)
+        
+
         # 2. Phero Reward
         #phero_sum = np.sum(self.phero)
         #phero_reward = -phero_sum*2
@@ -190,7 +194,7 @@ class Scenario(BaseScenario):
             if is_collision == True:
                 collision_reward = -50.0
         
-        reward = distance_reward*(3/world.dt)+phero_reward+goal_reward+collision_reward
+        reward = distance_reward+phero_reward+goal_reward+collision_reward
         print("distance reward: {}".format(distance_reward))
         print("collision_reward: {}".format(collision_reward))
         print("goal_reward: {}".format(goal_reward))
