@@ -1,21 +1,9 @@
-import numpy as np
-from math import *
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
+import numpy as np 
 from math import *
 
 # Miscellanous functions
 
-=======
->>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
->>>>>>> mobile_robot
-=======
 import time
-
-# Miscellanous functions
-
->>>>>>> mobile_robot
 
 # physical/external base state of all entites
 class EntityState(object):
@@ -26,16 +14,7 @@ class EntityState(object):
         self.p_vel = None
         # robot pose (x, y, theta)
         self.p_pose = None
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-        # robot pose (x, y, theta)
-        self.p_pose = None
-=======
->>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
->>>>>>> mobile_robot
-=======
->>>>>>> mobile_robot
+
 
 # state of agents (including communication and internal/mental state)
 class AgentState(EntityState):
@@ -60,24 +39,9 @@ class Action(object):
         self.u = None
         # communication action
         self.c = None
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> mobile_robot
+
         # Twist (linear.x, angular.z) - wheeled mobile robot style
         self.twist = [0, 0]
-
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
->>>>>>> mobile_robot
-=======
-        # Twist (linear.x, angular.z) - wheeled mobile robot style
-        self.twist = [0, 0]
-
->>>>>>> mobile_robot
 
 # properties and state of physical world entity
 class Entity(object):
@@ -133,14 +97,7 @@ class Agent(Entity):
         self.action = Action()
         # script behavior to execute
         self.action_callback = None
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
->>>>>>> mobile_robot
-        
->>>>>>> mobile_robot
+
     def twistToU(self):
         '''
         Twist has to be converted to u as it is used as acceleration vector in the next state calculation.
@@ -151,22 +108,10 @@ class Agent(Entity):
         if self.action.twist is not None:
             if self.action.twist.shape == (1,2):
                 self.action.twist = self.action.twist.reshape(2,)
-<<<<<<< HEAD
-            theta = pi*self.state.p_pose[2]
-            self.action.u = np.asarray([self.action.twist[0]*cos(theta)+self.action.twist[1]*cos(theta+pi/2),
-                                        self.action.twist[0]*sin(theta)+self.action.twist[1]*sin(theta+pi/2)])
-<<<<<<< HEAD
-=======
 
-
-=======
->>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
->>>>>>> mobile_robot
-=======
             theta = self.state.p_pose[2]
             self.action.u = np.asarray([self.action.twist[0]*cos(theta),
                                         self.action.twist[0]*sin(theta)])
->>>>>>> mobile_robot
 
 # multi-agent world
 class World(object):
@@ -282,14 +227,7 @@ class World(object):
                     entity.state.p_vel = entity.state.p_vel / np.sqrt(np.square(entity.state.p_vel[0]) +
                                                                   np.square(entity.state.p_vel[1])) * entity.max_speed
             entity.state.p_pos += entity.state.p_vel * self.dt
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> mobile_robot
-=======
-    
->>>>>>> mobile_robot
+
     def update_agent_pose(self, agent):
         '''
         Pose is updated in this function as intergrate_state only cares x, y p,v,a. 
@@ -299,14 +237,6 @@ class World(object):
         agent.state.p_pose = [agent.state.p_pos[0], agent.state.p_pos[1], agent.state.p_pose[2]]
         print("theta: {}".format(agent.state.p_pose[2]))
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
->>>>>>> mobile_robot
-=======
->>>>>>> mobile_robot
 
     def update_agent_state(self, agent):
         # set communication state (directly for now)
