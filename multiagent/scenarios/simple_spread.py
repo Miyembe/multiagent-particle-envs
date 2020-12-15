@@ -8,11 +8,7 @@ class Scenario(BaseScenario):
         world = World()
         # set any world properties first
         world.dim_c = 2
-<<<<<<< HEAD
         num_agents = 2
-=======
-        num_agents = 3
->>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
         num_landmarks = 3
         world.collaborative = True
         # add agents
@@ -26,11 +22,7 @@ class Scenario(BaseScenario):
         world.landmarks = [Landmark() for i in range(num_landmarks)]
         for i, landmark in enumerate(world.landmarks):
             landmark.name = 'landmark %d' % i
-<<<<<<< HEAD
             landmark.collide = True
-=======
-            landmark.collide = False
->>>>>>> 69ee7f85811c77ee651722bc3c332677b2195da1
             landmark.movable = False
         # make initial conditions
         self.reset_world(world)
