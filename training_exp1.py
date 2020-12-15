@@ -339,6 +339,7 @@ class Runner(AbstractEnvRunner):
             self.reset_counter += 1
         self.dones = [False] * self.env.n
         for _ in range(self.nsteps):
+            start_time = time.time()
             #print self.obs
             mb_ids.append(self.ids)
             actions, values, self.states, neglogpacs = self.model.step(self.obs, self.states, self.dones)
@@ -347,6 +348,7 @@ class Runner(AbstractEnvRunner):
             mb_values.append(values)
             mb_neglogpacs.append(neglogpacs)
             mb_dones.append(self.dones)
+            end_time = time.time()
 
             self.ids, self.obs, rewards, self.dones, infos = self.env.step(actions)
             for info in infos:

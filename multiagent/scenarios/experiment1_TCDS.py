@@ -4,6 +4,7 @@ from npsocket_sn import SocketNumpyArray
 from multiagent.core import World, Agent, Landmark
 from multiagent.scenario import BaseScenario
 from math import *
+import time
 
 class Scenario(BaseScenario):
 
@@ -160,13 +161,15 @@ class Scenario(BaseScenario):
         phero_reward = 0.0
         goal_reward = 0.0
         collision_reward = 0.0
+        angular_reward = 0.0
         #angular_punish_rewards = [0.0]*self.num_robots
         #linear_punish_rewards = [0.0]*self.num_robots
 
         # 1. Distance Reward
         goal_progress = agent.state.distance_to_goal_prev - agent.state.distance_to_goal
         if abs(goal_progress) < 0.1:
-            print("Goal Progress: {}".format(goal_progress))
+            #print("Goal Progress: {}".format(goal_progress))
+            #print("Angle: {}".format(agent.state.angle_diff))
             if goal_progress >= 0:
                     distance_reward = goal_progress * 1.2
             else:
@@ -174,26 +177,38 @@ class Scenario(BaseScenario):
         else:
             distance_reward = 0.0
 
+        # Scaling distance_reward 
+        distance_reward = distance_reward * (5/world.dt)
+        
+
         # 2. Phero Reward
         #phero_sum = np.sum(self.phero)
         #phero_reward = -phero_sum*2
 
         # 3. Goal Reward
         if agent.state.distance_to_goal <= 0.3:
-            goal_reward = 50.0
+            goal_reward = 100.0
             #done = True
             #self.reset(model_state, id_bots=idx[i])
 
         # 4. Collision Penalty
-        for i, obstacle in enumerate([ob for ob in world.landmarks if 'obstacle' is ob]):
+        for i, obstacle in enumerate([ob for ob in world.landmarks if 'obstacle' in ob.name]):
             is_collision = self.is_collision(agent, obstacle)
             if is_collision == True:
                 collision_reward = -50.0
+
+        # 5. Angular velocity penalty
+        if abs(agent.action.twist[1]) > 0.8:
+            angular_reward = -1
         
-        reward = distance_reward*(3/world.dt)+phero_reward+goal_reward+collision_reward
-        print("distance reward: {}".format(distance_reward))
-        print("collision_reward: {}".format(collision_reward))
-        print("goal_reward: {}".format(goal_reward))
+        reward = distance_reward+phero_reward+goal_reward+collision_reward
+        print("----------------")
+        print("GP: {}".format(goal_progress))
+        print("Distance R: {}".format(distance_reward))
+        print("Collision R: {}".format(collision_reward))
+        print("Goal R: {}".format(goal_reward))
+        print("Angular R: {}".format(angular_reward))
+        print("Reward: {}".format(reward))
 
         return reward
 
@@ -215,7 +230,9 @@ class Scenario(BaseScenario):
         self.phero = phero = np.asarray(data).reshape(1,9)
         
         
+
         obs = np.hstack((phero, [agent.action.twist], np.asarray([agent.state.distance_to_goal]).reshape(1,1), np.asarray([agent.state.angle_diff]).reshape(1,1)))
+        #print("obs: {}".format(obs))
         #print("Observation: {}".format(obs))
         world.obs_n = np.shape(obs)[1]
         return obs # 20201201 observation is changed (pheromone + velocity, distance, anglediff ) 1*13
@@ -225,6 +242,7 @@ class Scenario(BaseScenario):
         
         # 1. Goal arrival
         if agent.state.distance_to_goal <= 0.3:
+            print("Goal Arrived!")
             agent.state.done = True
 
         # 2. Out of range
@@ -233,12 +251,15 @@ class Scenario(BaseScenario):
             print("out of range!!!!")
 
         # 3. collision
-        for i, obstacle in enumerate([ob for ob in world.landmarks if 'obstacle' is ob]):
-            is_collision = self.is_collision(agent, landmark)
+        for i, obstacle in enumerate([ob for ob in world.landmarks if 'obstacle' in ob.name]):
+            is_collision = self.is_collision(agent, obstacle)
             if is_collision == True:
                 agent.state.done = True
-
+                print("Collision!!")
+                time.sleep(1)
+            
         done = agent.state.done
+       
 
         return done
     

@@ -1,4 +1,8 @@
 __pycache__/
+log/
 *.egg-info/
 *.pyc
+<<<<<<< HEAD
 log/
+=======
+>>>>>>> mobile_robot
